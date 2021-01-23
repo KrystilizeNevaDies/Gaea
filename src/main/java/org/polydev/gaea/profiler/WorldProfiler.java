@@ -2,6 +2,7 @@ package org.polydev.gaea.profiler;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import net.jafama.FastMath;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.polydev.gaea.generation.GaeaChunkGenerator;
@@ -18,7 +19,8 @@ public class WorldProfiler {
             throw new IllegalArgumentException("Attempted to instantiate profiler on non-Gaea managed world!");
         this.addMeasurement(new Measurement(2500000, DataType.PERIOD_MILLISECONDS), "TotalChunkGenTime")
                 .addMeasurement(new Measurement(2500000, DataType.PERIOD_MILLISECONDS), "ChunkBaseGenTime")
-                .addMeasurement(new Measurement(2000000, DataType.PERIOD_MILLISECONDS), "PaletteApplyTime");
+                .addMeasurement(new Measurement(2000000, DataType.PERIOD_MILLISECONDS), "BiomeApplyTime")
+                .addMeasurement(new Measurement(2000000, DataType.PERIOD_MILLISECONDS), "PopulationManagerTime");
         isProfiling = false;
         this.world = w;
         ((GaeaChunkGenerator) w.getGenerator()).attachProfiler(this);
@@ -41,10 +43,9 @@ public class WorldProfiler {
                     .append(ChatColor.GOLD)
                     .append(" / ")
                     .append(ChatColor.GREEN)
-                    .append((double) Math.round((e.getValue().getStdDev() / 1000000) * 100D) / 100D)
+                    .append((double) FastMath.round((e.getValue().getStdDev() / 1000000) * 100D) / 100D)
                     .append("ms")
-                    .append(ChatColor.GOLD)
-                    .append("\n");
+                    .append(ChatColor.GOLD).append(" (x").append(e.getValue().size()).append(")\n");
         }
         return result.toString();
     }

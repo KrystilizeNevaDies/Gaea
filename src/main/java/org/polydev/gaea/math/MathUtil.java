@@ -1,5 +1,8 @@
 package org.polydev.gaea.math;
 
+import org.polydev.gaea.util.FastRandom;
+import net.jafama.FastMath;
+
 import java.util.Random;
 
 /**
@@ -23,10 +26,10 @@ public class MathUtil {
         double mean = sum / length;
 
         for(double num : numArray) {
-            standardDeviation += Math.pow(num - mean, 2);
+            standardDeviation += FastMath.pow(num - mean, 2);
         }
 
-        return Math.sqrt(standardDeviation / length);
+        return FastMath.sqrt(standardDeviation / length);
     }
 
     /**
@@ -38,7 +41,7 @@ public class MathUtil {
      * @return long - The carver seed.
      */
     public static long getCarverChunkSeed(int chunkX, int chunkZ, long seed) {
-        Random r = new Random(seed);
+        Random r = new FastRandom(seed);
         return chunkX * r.nextLong() ^ chunkZ * r.nextLong() ^ seed;
     }
 

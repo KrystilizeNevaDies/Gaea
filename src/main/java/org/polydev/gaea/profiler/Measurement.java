@@ -1,10 +1,11 @@
 package org.polydev.gaea.profiler;
 
+import net.jafama.FastMath;
 import org.bukkit.Bukkit;
 import org.polydev.gaea.math.MathUtil;
+import org.polydev.gaea.util.GlueList;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,14 +27,18 @@ public class Measurement {
     public Measurement(long desirable, DataType type) {
         this.desirable = desirable;
         this.type = type;
-        measurements = new ArrayList<>();
+        measurements = new GlueList<>();
     }
 
     public void record(long value) {
-        max = Math.max(value, max);
-        min = Math.min(value, min);
+        max = FastMath.max(value, max);
+        min = FastMath.min(value, min);
         if(value / 1000000 > 5000) Bukkit.getLogger().warning("Measurement took " + type.getFormatted(value));
         measurements.add(value);
+    }
+
+    public int size() {
+        return measurements.size();
     }
 
     public ProfileFuture beginMeasurement() {
@@ -65,7 +70,7 @@ public class Measurement {
 
     public long average() {
         BigInteger running = new BigInteger("0");
-        List<Long> mTemp = new ArrayList<>(measurements);
+        List<Long> mTemp = new GlueList<>(measurements);
         for(Long l : mTemp) {
             running = running.add(BigInteger.valueOf(l));
         }
@@ -74,7 +79,7 @@ public class Measurement {
     }
 
     public double getStdDev() {
-        List<Long> mTemp = new ArrayList<>(measurements);
+        List<Long> mTemp = new GlueList<>(measurements);
         double[] vals = new double[mTemp.size()];
         for(int i = 0; i < mTemp.size(); i++) {
             vals[i] = mTemp.get(i);

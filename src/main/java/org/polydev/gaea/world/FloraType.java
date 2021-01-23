@@ -6,10 +6,11 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.polydev.gaea.math.Range;
+import org.polydev.gaea.util.GlueList;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -46,7 +47,7 @@ public enum FloraType implements Flora {
     BROWN_MUSHROOM(Sets.newHashSet(Material.GRASS_BLOCK, Material.PODZOL, Material.DIRT, Material.STONE, Material.NETHERRACK, Material.MYCELIUM), Bukkit.createBlockData("minecraft:brown_mushroom")),
     ;
 
-    private final List<BlockData> data = new ArrayList<>();
+    private final List<BlockData> data = new GlueList<>();
 
     private final Set<Material> spawns;
 
@@ -57,20 +58,26 @@ public enum FloraType implements Flora {
 
     @Override
     public List<Block> getValidSpawnsAt(Chunk chunk, int x, int z, Range check) {
-        List<Block> blocks = new ArrayList<>();
+        List<Block> blocks = new GlueList<>();
         for(int y : check) {
-            if(spawns.contains(chunk.getBlock(x, y, z).getType()) && chunk.getBlock(x, y + 1, z).getType().isAir()) {
+            Block block = chunk.getBlock(x, y, z);
+            if(spawns.contains(block.getType()) && valid(block)) {
                 blocks.add(chunk.getBlock(x, y, z));
             }
         }
         return blocks;
     }
 
+    private boolean valid(Block block) {
+        for(int i = 1; i < data.size() + 1; i++) {
+            block = block.getRelative(BlockFace.UP);
+            if(!block.isEmpty()) return false;
+        }
+        return true;
+    }
+
     @Override
     public boolean plant(Location l) {
-        for(int i = 1; i < data.size() + 1; i++) {
-            if(! l.clone().add(0, i, 0).getBlock().isEmpty()) return false;
-        }
         for(int i = 1; i < data.size() + 1; i++) {
             l.clone().add(0, i, 0).getBlock().setBlockData(data.get(i - 1), false);
         }

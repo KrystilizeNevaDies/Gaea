@@ -1,11 +1,12 @@
 package org.polydev.gaea.structures.loot;
 
+import net.jafama.FastMath;
 import org.bukkit.inventory.ItemStack;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.polydev.gaea.math.ProbabilityCollection;
+import org.polydev.gaea.util.GlueList;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -23,11 +24,18 @@ public class Pool {
      * @param pool The JSON Object to instantiate from.
      */
     public Pool(JSONObject pool) {
-        this.max = Math.toIntExact((long) ((JSONObject) pool.get("rolls")).get("max"));
-        this.min = Math.toIntExact((long) ((JSONObject) pool.get("rolls")).get("min"));
+        Object amount = pool.get("rolls");
+        if(amount instanceof Long) {
+            max = FastMath.toIntExact((Long) amount);
+            min = FastMath.toIntExact((Long) amount);
+        } else {
+            max = FastMath.toIntExact((Long) ((JSONObject) amount).get("max"));
+            min = FastMath.toIntExact((Long) ((JSONObject) amount).get("min"));
+        }
+
         for(Object entryJSON : (JSONArray) pool.get("entries")) {
             Entry entry = new Entry((JSONObject) entryJSON);
-            entries.add(entry, Math.toIntExact(entry.getWeight()));
+            entries.add(entry, FastMath.toIntExact(entry.getWeight()));
         }
     }
 
@@ -40,7 +48,7 @@ public class Pool {
     public List<ItemStack> getItems(Random r) {
 
         int rolls = r.nextInt(max - min + 1) + min;
-        List<ItemStack> items = new ArrayList<>();
+        List<ItemStack> items = new GlueList<>();
         for(int i = 0; i < rolls; i++) {
             items.add(entries.get(r).getItem(r));
         }

@@ -15,7 +15,6 @@ import java.util.Random;
 public abstract class GaeaChunkGenerator extends ChunkGenerator {
     private final ChunkInterpolator.InterpolationType interpolationType;
     private FastNoiseLite gen;
-    private ChunkInterpolator interp;
     private WorldProfiler profiler;
 
     public GaeaChunkGenerator(ChunkInterpolator.InterpolationType type) {
@@ -33,40 +32,37 @@ public abstract class GaeaChunkGenerator extends ChunkGenerator {
                 gen.setFrequency(getNoiseFrequency(world));
             }
             ChunkData chunk;
+            ChunkInterpolator interp;
             try(ProfileFuture ignored = measure("ChunkBaseGenTime")) {
                 interp = interpolationType.getInstance(world, chunkX, chunkZ, this.getBiomeGrid(world), gen);
-                chunk = generateBase(world, random, chunkX, chunkZ, gen);
+                chunk = generateBase(world, random, chunkX, chunkZ, interp);
             }
-            try(ProfileFuture ignored = measure("PaletteApplyTime")) {
+            try(ProfileFuture ignored = measure("BiomeApplyTime")) {
                 org.polydev.gaea.biome.BiomeGrid grid = getBiomeGrid(world);
                 int xOrig = (chunkX << 4);
                 int zOrig = (chunkZ << 4);
                 for(byte x = 0; x < 4; x++) {
                     for(byte z = 0; z < 4; z++) {
-                        int cx = xOrig + x * 4;
-                        int cz = zOrig + z * 4;
+                        int cx = xOrig + (x << 2);
+                        int cz = zOrig + (z << 2);
                         Biome b = grid.getBiome(cx, cz, GenerationPhase.PALETTE_APPLY);
-                        biome.setBiome(x * 4, z * 4, b.getVanillaBiome());
+                        biome.setBiome(x << 2, z << 2, b.getVanillaBiome());
                     }
                 }
             }
             for(GenerationPopulator g : getGenerationPopulators(world)) {
-                chunk = g.populate(world, chunk, random, chunkX, chunkZ, interp);
+                g.populate(world, chunk, random, chunkX, chunkZ, interp);
             }
             return chunk;
         }
     }
 
-    public double getInterpolatedNoise(double x, double z) {
-        return this.interp.getNoise(x, z);
-    }
-
-    public double getInterpolatedNoise(double x, double y, double z) {
-        return this.interp.getNoise(x, y, z);
-    }
-
     public void attachProfiler(WorldProfiler p) {
         this.profiler = p;
+    }
+
+    public WorldProfiler getProfiler() {
+        return profiler;
     }
 
     private ProfileFuture measure(String id) {
@@ -74,11 +70,11 @@ public abstract class GaeaChunkGenerator extends ChunkGenerator {
         return null;
     }
 
-    public abstract ChunkData generateBase(@NotNull World world, @NotNull Random random, int x, int z, FastNoiseLite noise);
+    public abstract ChunkData generateBase(@NotNull World world, @NotNull Random random, int x, int z, ChunkInterpolator noise);
 
     public abstract int getNoiseOctaves(World w);
 
-    public abstract float getNoiseFrequency(World w);
+    public abstract double getNoiseFrequency(World w);
 
     public abstract List<GenerationPopulator> getGenerationPopulators(World w);
 

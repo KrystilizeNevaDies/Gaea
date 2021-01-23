@@ -4,6 +4,7 @@ import com.esotericsoftware.reflectasm.ConstructorAccess;
 import com.esotericsoftware.reflectasm.MethodAccess;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.polydev.gaea.util.FastRandom;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,9 +61,9 @@ public class NMSStructure {
             Class chunkCoordIntPairClass = Class.forName("net.minecraft.server." + version + ".ChunkCoordIntPair");
             Class craftBlockClass = Class.forName("org.bukkit.craftbukkit." + version + ".block.CraftBlock");
             Class generatorAccessClass;
-            if(version.startsWith("v1_16_R2"))
-                generatorAccessClass = Class.forName("net.minecraft.server." + version + ".WorldAccess");
-            else generatorAccessClass = Class.forName("net.minecraft.server." + version + ".GeneratorAccess");
+            if(version.startsWith("v1_15") || version.startsWith("v1_16_R1"))
+                generatorAccessClass = Class.forName("net.minecraft.server." + version + ".GeneratorAccess");
+            else generatorAccessClass = Class.forName("net.minecraft.server." + version + ".WorldAccess");
             nbtStreamToolsAccess = MethodAccess.get(nbtStreamToolsClass);
             loadNBTStreamFromInputStreamIndex = nbtStreamToolsAccess.getIndex("a", InputStream.class);
             definedStructureConstructorAccess = ConstructorAccess.get(definedStructureClass);
@@ -334,12 +335,12 @@ public class NMSStructure {
             info = definedStructureInfoMethodAccess.invoke(info, mysteryBooleanMethodIndex, false);
             info = definedStructureInfoMethodAccess.invoke(info, chunkCoordIntPairMethodIndex, (Object) null);
             info = definedStructureInfoMethodAccess.invoke(info, mysteryBooleancMethodIndex, false);
-            info = definedStructureInfoMethodAccess.invoke(info, setRandomMethodIndex, new Random());
+            info = definedStructureInfoMethodAccess.invoke(info, setRandomMethodIndex, new FastRandom());
 
             if(version.startsWith("v1_15")) {
                 definedStructureMethodAccess.invoke(this.structure, pasteMethodIndex, world, pos, info);
             } else {
-                definedStructureMethodAccess.invoke(this.structure, pasteMethodIndex, world, pos, info, new Random());
+                definedStructureMethodAccess.invoke(this.structure, pasteMethodIndex, world, pos, info, new FastRandom());
             }
         } catch(IllegalArgumentException e) {
             e.printStackTrace();

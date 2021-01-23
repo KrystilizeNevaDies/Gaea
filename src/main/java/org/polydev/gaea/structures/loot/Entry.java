@@ -1,6 +1,6 @@
 package org.polydev.gaea.structures.loot;
 
-import org.bukkit.Bukkit;
+import net.jafama.FastMath;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.json.simple.JSONArray;
@@ -9,8 +9,8 @@ import org.polydev.gaea.structures.loot.functions.AmountFunction;
 import org.polydev.gaea.structures.loot.functions.DamageFunction;
 import org.polydev.gaea.structures.loot.functions.EnchantWithLevelsFunction;
 import org.polydev.gaea.structures.loot.functions.Function;
+import org.polydev.gaea.util.GlueList;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -20,7 +20,7 @@ import java.util.Random;
 public class Entry {
     private final Material item;
     private final long weight;
-    private final List<Function> functions = new ArrayList<>();
+    private final List<Function> functions = new GlueList<>();
 
     /**
      * Instantiates an Entry from a JSON representation.
@@ -28,30 +28,48 @@ public class Entry {
      * @param entry The JSON Object to instantiate from.
      */
     public Entry(JSONObject entry) {
+
         String id = entry.get("name").toString();
-        if(id.contains(":")) this.item = Bukkit.createBlockData(id).getMaterial();
-        else this.item = Material.valueOf(entry.get("name").toString().toUpperCase());
-        this.weight = (long) entry.get("weight");
+        this.item = Material.matchMaterial(id);
+
+        long weight1;
+        try {
+            weight1 = (long) entry.get("weight");
+        } catch(NullPointerException e) {
+            weight1 = 1;
+        }
+
+        this.weight = weight1;
         if(entry.containsKey("functions")) {
             for(Object function : (JSONArray) entry.get("functions")) {
                 switch(((String) ((JSONObject) function).get("function"))) {
+                    case "minecraft:set_count":
                     case "set_count":
-                        long max = (long) ((JSONObject) ((JSONObject) function).get("count")).get("max");
-                        long min = (long) ((JSONObject) ((JSONObject) function).get("count")).get("min");
-                        functions.add(new AmountFunction(Math.toIntExact(min), Math.toIntExact(max)));
+                        Object loot = ((JSONObject) function).get("count");
+                        long max, min;
+                        if(loot instanceof Long) {
+                            max = (Long) loot;
+                            min = (Long) loot;
+                        } else {
+                            max = (long) ((JSONObject) loot).get("max");
+                            min = (long) ((JSONObject) loot).get("min");
+                        }
+                        functions.add(new AmountFunction(FastMath.toIntExact(min), FastMath.toIntExact(max)));
                         break;
+                    case "minecraft:set_damage":
                     case "set_damage":
                         long maxDamage = (long) ((JSONObject) ((JSONObject) function).get("damage")).get("max");
                         long minDamage = (long) ((JSONObject) ((JSONObject) function).get("damage")).get("min");
-                        functions.add(new DamageFunction(Math.toIntExact(minDamage), Math.toIntExact(maxDamage)));
+                        functions.add(new DamageFunction(FastMath.toIntExact(minDamage), FastMath.toIntExact(maxDamage)));
                         break;
+                    case "minecraft:enchant_with_levels":
                     case "enchant_with_levels":
                         long maxEnchant = (long) ((JSONObject) ((JSONObject) function).get("levels")).get("max");
                         long minEnchant = (long) ((JSONObject) ((JSONObject) function).get("levels")).get("min");
                         JSONArray disabled = null;
                         if(((JSONObject) function).containsKey("disabled_enchants"))
                             disabled = (JSONArray) ((JSONObject) function).get("disabled_enchants");
-                        functions.add(new EnchantWithLevelsFunction(Math.toIntExact(minEnchant), Math.toIntExact(maxEnchant), disabled));
+                        functions.add(new EnchantWithLevelsFunction(FastMath.toIntExact(minEnchant), FastMath.toIntExact(maxEnchant), disabled));
                         break;
                 }
             }

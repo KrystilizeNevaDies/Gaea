@@ -1,13 +1,10 @@
 package org.polydev.gaea.math;
 
-import org.bukkit.Bukkit;
+import net.jafama.FastMath;
 import org.bukkit.World;
 import org.polydev.gaea.biome.BiomeGrid;
 import org.polydev.gaea.biome.Generator;
 import org.polydev.gaea.generation.GenerationPhase;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Class to abstract away the 16 Interpolators needed to generate a chunk.<br>
@@ -40,7 +37,7 @@ public class ChunkInterpolator3 implements ChunkInterpolator {
 
         for(int x = - 1; x < 6; x++) {
             for(int z = - 1; z < 6; z++) {
-                gens[x + 1][z + 1] = grid.getBiome(xOrigin + x * 4, zOrigin + z * 4, GenerationPhase.BASE).getGenerator();
+                gens[x + 1][z + 1] = grid.getBiome(xOrigin + (x << 2), zOrigin + (z << 2), GenerationPhase.BASE).getGenerator();
             }
         }
         for(int x = 0; x < 5; x++) {
@@ -62,7 +59,7 @@ public class ChunkInterpolator3 implements ChunkInterpolator {
                             biomeAvg(x, y, z + 1),
                             biomeAvg(x + 1, y, z + 1),
                             biomeAvg(x, y + 1, z + 1),
-                            biomeAvg(x + 1, y + 1, z + 1));
+                            biomeAvg(x + 1, y + 1, z + 1), gens[x+1][z+1].getInterpolationType());
                 }
             }
         }
@@ -90,7 +87,7 @@ public class ChunkInterpolator3 implements ChunkInterpolator {
         for(byte x = - 1; x < 6; x++) {
             for(byte z = - 1; z < 6; z++) {
                 for(int y = 0; y < 64; y++) {
-                    noiseStorage[x + 1][z + 1][y] = gens[x + 1][z + 1].getNoise(noise, w, x * 4 + xOrigin, y * 4, z * 4 + zOrigin);
+                    noiseStorage[x + 1][z + 1][y] = gens[x + 1][z + 1].getNoise(noise, w, (x << 2) + xOrigin, y << 2, (z << 2) + zOrigin);
                 }
             }
         }
@@ -131,6 +128,10 @@ public class ChunkInterpolator3 implements ChunkInterpolator {
      */
     @Override
     public double getNoise(double x, double y, double z) {
-        return interpGrid[((int) x) / 4][((int) y) / 4][((int) z) / 4].trilerp((float) (x % 4) / 4, (float) (y % 4) / 4, (float) (z % 4) / 4);
+        return interpGrid[reRange(((int) x) / 4, 3)][reRange(((int) y) / 4, 63)][reRange(((int) z) / 4, 3)].trilerp((x % 4) / 4, (y % 4) / 4, (z % 4) / 4);
+    }
+
+    private static int reRange(int value, int high) {
+        return FastMath.max(FastMath.min(value, high), 0);
     }
 }

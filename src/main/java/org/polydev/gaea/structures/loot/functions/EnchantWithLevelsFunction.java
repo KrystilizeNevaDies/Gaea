@@ -1,11 +1,12 @@
 package org.polydev.gaea.structures.loot.functions;
 
+import net.jafama.FastMath;
 import org.bukkit.Bukkit;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.json.simple.JSONArray;
+import org.polydev.gaea.util.GlueList;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -32,13 +33,13 @@ public class EnchantWithLevelsFunction implements Function {
     @Override
     public ItemStack apply(ItemStack original, Random r) {
         double enchant = (r.nextDouble() * (max - min)) + min;
-        List<Enchantment> possible = new ArrayList<>();
+        List<Enchantment> possible = new GlueList<>();
         for(Enchantment ench : Enchantment.values()) {
-            if(ench.canEnchantItem(original) && (disabled == null || this.disabled.contains(ench.getName()))) {
+            if(ench.canEnchantItem(original) && (disabled == null || !this.disabled.contains(ench.getName()))) {
                 possible.add(ench);
             }
         }
-        int numEnchant = (r.nextInt((int) Math.abs(enchant)) / 10 + 1);
+        int numEnchant = (r.nextInt((int) FastMath.abs(enchant)) / 10 + 1);
         if(possible.size() >= numEnchant) {
             Collections.shuffle(possible);
             iter:
@@ -49,9 +50,9 @@ public class EnchantWithLevelsFunction implements Function {
                 }
                 int lvl = r.nextInt(1 + (int) (((enchant / 40 > 1) ? 1 : enchant / 40) * (chosen.getMaxLevel())));
                 try {
-                    original.addEnchantment(chosen, Math.max(lvl, 1));
+                    original.addEnchantment(chosen, FastMath.max(lvl, 1));
                 } catch(IllegalArgumentException e) {
-                    Bukkit.getLogger().warning("[Gaea] Attempted to enchant " + original.getType() + " with " + chosen + " at level " + Math.max(lvl, 1) + ", but an unexpected exception occurred! Usually this is caused by a misbehaving enchantment plugin.");
+                    Bukkit.getLogger().warning("[Gaea] Attempted to enchant " + original.getType() + " with " + chosen + " at level " + FastMath.max(lvl, 1) + ", but an unexpected exception occurred! Usually this is caused by a misbehaving enchantment plugin.");
                 }
             }
         }

@@ -1,8 +1,10 @@
 package org.polydev.gaea.world.carving;
 
+import net.jafama.FastMath;
 import org.bukkit.util.Vector;
 
 import java.util.Random;
+import java.util.function.BiConsumer;
 
 public abstract class Worm {
     private final Random r;
@@ -71,13 +73,8 @@ public abstract class Worm {
             this.bottomCut = bottomCut;
         }
 
-        private static int getChunkCoordinate(int n) {
-            if(n >= 0) return n % 16;
-            else return 15 - (Math.abs(n % 16));
-        }
-
         private static double ellipseEquation(int x, int y, int z, double xr, double yr, double zr) {
-            return (Math.pow(x, 2) / Math.pow(xr + 0.5D, 2)) + (Math.pow(y, 2) / Math.pow(yr + 0.5D, 2)) + (Math.pow(z, 2) / Math.pow(zr + 0.5D, 2));
+            return (FastMath.pow2(x) / FastMath.pow2(xr + 0.5D)) + (FastMath.pow2(y) / FastMath.pow2(yr + 0.5D)) + (FastMath.pow2(z) / FastMath.pow2(zr + 0.5D));
         }
 
         public Vector getOrigin() {
@@ -88,27 +85,31 @@ public abstract class Worm {
             return rad[index];
         }
 
-        public void carve(CarvingData data, int chunkX, int chunkZ) {
-            if(Math.abs(origin.getBlockX() / 16 - chunkX) > 1 && Math.abs(origin.getBlockZ() / 16 - chunkZ) > 1) return;
-            for(int x = - getRadius(0) - 1; x <= getRadius(0) + 1; x++) {
-                for(int y = - getRadius(1) - 1; y <= getRadius(1) + 1; y++) {
-                    for(int z = - getRadius(2) - 1; z <= getRadius(2) + 1; z++) {
+        public void carve(int chunkX, int chunkZ, BiConsumer<Vector, Carver.CarvingType> consumer) {
+            int xRad = getRadius(0);
+            int yRad = getRadius(1);
+            int zRad = getRadius(2);
+            int originX = (chunkX << 4);
+            int originZ = (chunkZ << 4);
+            for(int x = -xRad - 1; x <= xRad + 1; x++) {
+                if(!(FastMath.floorDiv(origin.getBlockX() + x, 16) == chunkX)) continue;
+                for(int z = -zRad - 1; z <= zRad + 1; z++) {
+                    if(!(FastMath.floorDiv(origin.getBlockZ() + z, 16) == chunkZ)) continue;
+                    for(int y = -yRad - 1; y <= yRad + 1; y++) {
                         Vector position = origin.clone().add(new Vector(x, y, z));
-                        if(Math.floor((double) (position.getBlockX()) / 16) == chunkX && Math.floor((double) (position.getBlockZ()) / 16) == chunkZ && position.getY() >= 0) {
-                            if(ellipseEquation(x, y, z, getRadius(0), getRadius(1), getRadius(2)) <= 1 &&
-                                    y >= - getRadius(1) - 1 + bottomCut && y <= getRadius(1) + 1 - topCut) {
-                                data.carve(position.getBlockX() - (chunkX * 16), position.getBlockY(), position.getBlockZ() - (chunkZ * 16), CarvingData.CarvingType.CENTER);
-                            } else if(ellipseEquation(x, y, z, getRadius(0) + 1.5, getRadius(1) + 1.5, getRadius(2) + 1.5) <= 1) {
-                                CarvingData.CarvingType type = CarvingData.CarvingType.WALL;
-                                if(y <= - getRadius(1) - 1 + bottomCut) {
-                                    type = CarvingData.CarvingType.BOTTOM;
-                                } else if(y >= getRadius(1) + 1 - topCut) {
-                                    type = CarvingData.CarvingType.TOP;
-                                }
-                                if(data.isCarved(position.getBlockX() - (chunkX * 16), position.getBlockY(), position.getBlockZ() - (chunkZ * 16)))
-                                    continue;
-                                data.carve(position.getBlockX() - (chunkX * 16), position.getBlockY(), position.getBlockZ() - (chunkZ * 16), type);
+                        if(position.getY() < 0 || position.getY() > 255) continue;
+                        double eq = ellipseEquation(x, y, z, xRad, yRad, zRad);
+                        if(eq <= 1 &&
+                                y >= -yRad - 1 + bottomCut && y <= yRad + 1 - topCut) {
+                            consumer.accept(new Vector(position.getBlockX() - originX, position.getBlockY(), position.getBlockZ() - originZ), Carver.CarvingType.CENTER);
+                        } else if(eq <= 1.5) {
+                            Carver.CarvingType type = Carver.CarvingType.WALL;
+                            if(y <= -yRad - 1 + bottomCut) {
+                                type = Carver.CarvingType.BOTTOM;
+                            } else if(y >= yRad + 1 - topCut) {
+                                type = Carver.CarvingType.TOP;
                             }
+                            consumer.accept(new Vector(position.getBlockX() - originX, position.getBlockY(), position.getBlockZ() - originZ), type);
                         }
                     }
                 }
